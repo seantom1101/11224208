@@ -318,8 +318,6 @@ else:
 
 <img width="909" height="689" alt="螢幕擷取畫面 2025-12-31 011955" src="https://github.com/user-attachments/assets/3b20ba8c-fb94-45a8-808f-6a4ff8489ac1" />
 
-
 <img width="808" height="682" alt="螢幕擷取畫面 2025-12-31 011721" src="https://github.com/user-attachments/assets/42c5a9f6-67d5-4930-862e-52c06092d80f" />
 
-
-
+<img width="811" height="730" alt="螢幕擷取畫面 2025-12-31 020634" src="https://github.com/user-attachments/assets/09369577-8b6c-4eea-9e32-8557f91fd7b4" />
