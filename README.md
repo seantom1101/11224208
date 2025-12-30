@@ -59,13 +59,13 @@ TensorFlow 是Google開源的計算框架，可以很好地支援深度學習的
 
 **安裝套件**
 
-<img width="628" height="185" alt="螢幕擷取畫面 2025-12-28 205745" src="https://github.com/user-attachments/assets/efa11ff3-85db-4e25-ab7c-d0c57cdc0b6f" />
+<img width="840" height="485" alt="螢幕擷取畫面 2025-12-31 001731" src="https://github.com/user-attachments/assets/d2190267-37ce-44f6-83ee-248b7e805af5" />
+
 
 ---
 
-**初始化與屬性設定**
+**定義核心類別**
 
-<img width="657" height="237" alt="image" src="https://github.com/user-attachments/assets/2d9d247c-a798-4947-9dec-0a8604d14cce" />
 
 ---
 
