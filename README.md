@@ -1,15 +1,5 @@
 # 專案實戰解析：基於深度學習建構卷積神經網路模型演算法，實現圖像辨識分類
 11224208 張承均
-
-## 📋 目錄
-
-- [前言]
-- [基礎知識介紹]
-- [數據集收集]
-- [模型訓練]
-- [圖像辨識分類]
-- [結果展示]
-- [總結]
   
 ---
 
@@ -234,16 +224,75 @@ classifier = SafeImageClassifier(PATH)
 classifier.resize_images()
 classifier.generate_csv()
 
-# 3. 建立模型 (已包含更多數據增強)
+# 3. 建立模型 (
 classifier.build_model()
 
 # 4. 進行初步訓練
 print("\n--- 階段一：初步訓練 (凍結基底模型) ---")
-classifier.train(epochs=20, batch_size=32)
+history_stage1 = classifier.train(epochs=15, batch_size=32)
+
+# 5. 進行微調 (解凍部分基底模型層)
+print("\n--- 階段二：微調 (解凍基底模型最後 30% 層) ---")
+history_stage2 = classifier.fine_tune(epochs=10, batch_size=16, unfreeze_from_percentage=0.7)
+
+print("\n✅ 訓練結束！變數 'history_stage1' 和 'history_stage2' 已產生，請繼續執行下一段畫圖程式碼。")
 ```
 
 ---
+**圖表 (Graph)**
+```python
+import matplotlib.pyplot as plt
 
+# 檢查是否有訓練紀錄
+if 'history_stage1' in locals() and history_stage1 is not None and 'history_stage2' in locals() and history_stage2 is not None:
+    print("📊 正在繪製分析圖表...")
+
+    # 合併兩個階段的訓練歷史
+    acc = history_stage1.history['accuracy'] + history_stage2.history['accuracy']
+    val_acc = history_stage1.history['val_accuracy'] + history_stage2.history['val_accuracy']
+    loss = history_stage1.history['loss'] + history_stage2.history['loss']
+    val_loss = history_stage1.history['val_loss'] + history_stage2.history['val_loss']
+
+    epochs_range = range(len(acc))
+
+    # 設定畫布大小 (寬 12, 高 5)
+    plt.figure(figsize=(12, 5))
+
+    # --- 左圖：準確率 (Accuracy) ---
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs_range, acc, label='Training Accuracy (訓練)', linewidth=2)
+    plt.plot(epochs_range, val_acc, label='Validation Accuracy (驗證)', linewidth=2, linestyle='--')
+    plt.legend(loc='lower right')
+    plt.title('Accuracy Trend (準確率趨勢)')
+    plt.ylabel('Accuracy (0~1)')
+    plt.xlabel('Epochs (訓練輪數)')
+    plt.grid(True, alpha=0.3)
+
+    # --- 右圖：損失值 (Loss) ---
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs_range, loss, label='Training Loss (訓練)', linewidth=2)
+    plt.plot(epochs_range, val_loss, label='Validation Loss (驗證)', linewidth=2, linestyle='--')
+    plt.legend(loc='upper right')
+    plt.title('Loss Trend (損失值趨勢)')
+    plt.ylabel('Loss')
+    plt.xlabel('Epochs (訓練輪數)')
+    plt.grid(True, alpha=0.3)
+
+    plt.tight_layout() # 自動調整間距
+    plt.show()
+
+    # 簡單分析
+    print("-" * 30)
+    print(f"最終訓練準確率: {acc[-1]:.2%}")
+    print(f"最終驗證準確率: {val_acc[-1]:.2%}")
+    if val_acc[-1] > 0.9:
+        print("🎉 模型表現非常優秀！")
+    elif val_acc[-1] < 0.6:
+        print("⚠️ 模型準確率較低，建議檢查圖片數量是否足夠。")
+else:
+    print("❌ 找不到訓練紀錄 (history_stage1 或 history_stage2)，請先執行上一段「初始化與訓練」的程式碼。")
+```
+---
 **預測 (Prediction)**
 ```python
 # 設定你要預測的圖片路徑
@@ -262,35 +311,7 @@ if os.path.exists(test_img):
 else:
     print(f"找不到測試圖片，請檢查路徑: {test_img}")
 ```
-
 ---
-
-<img width="453" height="155" alt="image" src="https://github.com/user-attachments/assets/f75ebcc2-5083-4524-ad92-3b4794dc4fc9" />
-
-
-**建立分類器:**
-
-        classifier = SafeImageClassifier(image_path)
-
-image_path 是資料集根目錄。會自動掃描資料夾，將每個子資料夾視為一個類別。初始化時會列出類別名稱。
-
-**圖片處理:**
-
-        classifier.resize_images()
-        
-將每個類別資料夾中的圖片 resize 成固定大小（200×200）。
-
-避免訓練時因為尺寸不同造成錯誤。
-        
-        classifier.generate_csv()
-
-生成 CSV，記錄每張圖片路徑與對應標籤。
-
-CSV 方便後續讀取訓練資料。
-
-
----
-
 # 結果圖
 
 
