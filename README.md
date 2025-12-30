@@ -1,6 +1,5 @@
 # 專案實戰解析：基於深度學習建構卷積神經網路模型演算法，實現圖像辨識分類
-
-(https://colab.research.google.com/drive/1Fb4Lrn8sovB8999nKf4RMP7hejy_XArb?usp=drive_link)
+11224208 張承均
 
 ## 📋 目錄
 
@@ -57,35 +56,212 @@ TensorFlow 是Google開源的計算框架，可以很好地支援深度學習的
 
 # 程式
 
-**安裝套件**
+**匯入套件**
+```python
+import os
+import cv2
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
-<img width="840" height="485" alt="螢幕擷取畫面 2025-12-31 001731" src="https://github.com/user-attachments/assets/d2190267-37ce-44f6-83ee-248b7e805af5" />
+from sklearn.model_selection import train_test_split
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import (
+    Conv2D, MaxPooling2D, Dense, Dropout,
+    BatchNormalization, GlobalAveragePooling2D
+)
+from tensorflow.keras.utils import to_categorical
+
+print(f"TensorFlow Version: {tf.__version__}")
+```
+
 
 
 ---
 
 **定義核心類別**
+```python
+class SafeImageClassifier:
+    def __init__(self, image_path, img_size=200):
+        self.image_path = image_path
+        self.img_size = img_size
 
+        # 1. 取得所有資料夾名稱
+        all_dirs = [
+            d for d in os.listdir(image_path)
+            if os.path.isdir(os.path.join(image_path, d))
+        ]
+
+        # 2. 過濾掉系統檔與預測用的資料夾
+        self.classes = sorted([
+            d for d in all_dirs
+            if not d.startswith('.') and d != "predictPic"
+        ])
+
+        self.class_map = {c: i for i, c in enumerate(self.classes)}
+        self.model = None
+        self.df = None
+
+        print(f"✅ 偵測到的訓練類別: {self.classes}")
+        if "predictPic" in all_dirs:
+            print("ℹ️ 已自動忽略 'predictPic' 資料夾，不將其視為訓練類別。")
+
+    def resize_images(self):
+        print("🔄 開始調整圖片大小...")
+        for cls in self.classes:
+            cls_folder = os.path.join(self.image_path, cls)
+            for f in os.listdir(cls_folder):
+                if f.startswith('.'): continue
+                fp = os.path.join(cls_folder, f)
+                try:
+                    img = cv2.imread(fp)
+                    if img is not None:
+                        img = cv2.resize(img, (self.img_size, self.img_size))
+                        cv2.imwrite(fp, img)
+                except:
+                    pass
+        print("✅ 圖片 Resize 完成")
+
+    def generate_csv(self):
+        data = []
+        for cls in self.classes:
+            cls_folder = os.path.join(self.image_path, cls)
+            for f in os.listdir(cls_folder):
+                if f.startswith('.'): continue
+                data.append({
+                    "path": os.path.join(cls_folder, f),
+                    "label": self.class_map[cls]
+                })
+        self.df = pd.DataFrame(data)
+        # 這裡不存檔也沒關係，直接存在記憶體中
+        print(f"✅ 資料索引建立完成，共有 {len(self.df)} 張圖片")
+
+    def build_model(self):
+        inputs = Input(shape=(self.img_size, self.img_size, 3))
+
+        # 第一層
+        x = Conv2D(64, 3, activation='relu', padding='same')(inputs)
+        x = MaxPooling2D()(x)
+        x = BatchNormalization()(x)
+
+        # 第二層
+        x = Conv2D(64, 3, activation='relu', padding='same')(x)
+        x = MaxPooling2D()(x)
+        x = BatchNormalization()(x)
+
+        # 第三層
+        x = Conv2D(32, 3, activation='relu', padding='same')(x)
+        x = MaxPooling2D()(x)
+        x = BatchNormalization()(x)
+
+        x = GlobalAveragePooling2D()(x)
+        x = Dense(128, activation='relu')(x)
+        x = Dropout(0.5)(x)
+
+        outputs = Dense(len(self.classes), activation='softmax')(x)
+
+        self.model = Model(inputs, outputs)
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        print("✅ 模型建構完成")
+
+    def train(self, epochs=10, batch_size=2):
+        if self.df is None or len(self.df) == 0:
+            print("❌ 無圖片資料可訓練")
+            return
+
+        X, y = [], []
+        for _, row in self.df.iterrows():
+            try:
+                img = cv2.imread(row['path'])
+                if img is not None:
+                    img = cv2.resize(img, (self.img_size, self.img_size))
+                    img = img / 255.0
+                    X.append(img)
+                    y.append(row['label'])
+            except:
+                pass
+
+        X = np.array(X)
+        y = to_categorical(y, num_classes=len(self.classes))
+
+        Xtr, Xva, ytr, yva = train_test_split(X, y, test_size=0.2, random_state=42)
+        print(f"🚀 開始訓練：訓練集 {len(Xtr)} 張, 驗證集 {len(Xva)} 張")
+
+        self.model.fit(Xtr, ytr, validation_data=(Xva, yva), epochs=epochs, batch_size=batch_size)
+
+    def predict_image(self, img_path, name_map=None):
+        if self.model is None:
+            print("❌ 模型尚未訓練")
+            return
+
+        img = cv2.imread(img_path)
+        if img is None:
+            print(f"❌ 找不到圖片: {img_path}")
+            return
+
+        img_display = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (self.img_size, self.img_size))
+        img = img / 255.0
+        img = np.expand_dims(img, 0)
+
+        probs = self.model.predict(img)[0]
+        idx = np.argmax(probs)
+        cls = self.classes[idx]
+        conf = float(probs[idx])
+
+        label_show = name_map.get(cls, cls) if name_map else cls
+
+        plt.figure(figsize=(4,4))
+        plt.imshow(img_display)
+        plt.title(f"{label_show} ({conf:.1%})")
+        plt.axis('off')
+        plt.show()
+
+        return cls, conf
+```
+---
+
+**初始化與訓練 (Training)**
+```python
+# 設定你的圖片資料夾路徑
+PATH = "/content/drive/MyDrive/picture/"
+
+# 1. 初始化
+classifier = SafeImageClassifier(PATH)
+
+# 2. 處理圖片與建立索引
+classifier.resize_images()
+classifier.generate_csv()
+
+# 3. 建立模型 (已包含更多數據增強)
+classifier.build_model()
+
+# 4. 進行初步訓練
+print("\n--- 階段一：初步訓練 (凍結基底模型) ---")
+classifier.train(epochs=20, batch_size=32)
+```
 
 ---
 
-**圖片處理相關**
+**預測 (Prediction)**
+```python
+# 設定你要預測的圖片路徑
+test_img = "/content/drive/MyDrive/picture/cat/000001.jpg"
 
-<img width="695" height="508" alt="image" src="https://github.com/user-attachments/assets/162a7f09-703f-4272-9141-c7ef724c3e3e" />
+# 設定中文顯示對照表 (可選)
+my_map = {
+    "bird": "Bird (鳥)",
+    "cat": "Cat (貓)"
+}
 
----
-
-**模型建立與訓練**
-
-<img width="580" height="619" alt="image" src="https://github.com/user-attachments/assets/c0f654a3-b76d-47d0-b8ee-2ac129da74ab" />
-
-<img width="727" height="594" alt="image" src="https://github.com/user-attachments/assets/e49fb419-1e3d-4b5b-b76a-75e23330a63f" />
-
----
-
-**預測與結果顯示**
-
-<img width="600" height="727" alt="image" src="https://github.com/user-attachments/assets/c6f9be5c-7e13-442d-af7b-71c97c975b9a" />
+# 執行預測
+if os.path.exists(test_img):
+    result, confidence = classifier.predict_image(test_img, name_map=my_map)
+    print(f"預測結果: {result}, 信心度: {confidence:.4f}")
+else:
+    print(f"找不到測試圖片，請檢查路徑: {test_img}")
+```
 
 ---
 
@@ -112,36 +288,11 @@ image_path 是資料集根目錄。會自動掃描資料夾，將每個子資料
 
 CSV 方便後續讀取訓練資料。
 
----
-
-**建立模型:**
-
-        classifier.build_model()
-
-建立 CNN 模型：
-
-        3 層卷積 + 最大池化 + BatchNorm、 GlobalAveragePooling、 Dense + Dropout、 最後輸出類別數的 softmax
-
-編譯模型，設定損失函數與優化器。
-
----
-
-**訓練模型**
-
-        classifier.train(epochs=10, batch_size=2)
-
-讀取 CSV 中的圖片與標籤。
-
-將標籤 one-hot encoding。
-
-切分訓練集與驗證集（80%/20%）。
-
-開始訓練模型。
 
 ---
 
 # 結果圖
 
-<img width="580" height="612" alt="image" src="https://github.com/user-attachments/assets/4accef56-40ed-4388-83a3-9a09cb2c5e25" />
 
-<img width="559" height="597" alt="image" src="https://github.com/user-attachments/assets/c3985ebb-d758-4cc7-be0c-446fc1361250" />
+
+
