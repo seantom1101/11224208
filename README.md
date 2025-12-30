@@ -314,6 +314,12 @@ else:
 ---
 # 結果圖
 
+<img width="713" height="686" alt="螢幕擷取畫面 2025-12-31 012027" src="https://github.com/user-attachments/assets/380167a1-1690-440f-9f18-37b3bf53c503" />
+
+<img width="909" height="689" alt="螢幕擷取畫面 2025-12-31 011955" src="https://github.com/user-attachments/assets/3b20ba8c-fb94-45a8-808f-6a4ff8489ac1" />
+
+
+<img width="808" height="682" alt="螢幕擷取畫面 2025-12-31 011721" src="https://github.com/user-attachments/assets/42c5a9f6-67d5-4930-862e-52c06092d80f" />
 
 
 
