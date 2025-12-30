@@ -292,6 +292,8 @@ if 'history_stage1' in locals() and history_stage1 is not None and 'history_stag
 else:
     print("❌ 找不到訓練紀錄 (history_stage1 或 history_stage2)，請先執行上一段「初始化與訓練」的程式碼。")
 ```
+<img width="1334" height="550" alt="螢幕擷取畫面 2025-12-31 020917" src="https://github.com/user-attachments/assets/f4cba9cc-4785-4640-9948-b652b3146585" />
+
 ---
 **預測 (Prediction)**
 ```python
